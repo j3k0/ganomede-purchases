@@ -2,11 +2,11 @@
 import { expect } from 'chai';
 import supertest from 'supertest';
 import { createServer } from '../src/server';
-import { createAbout } from '../src/about.router';
+import routes from '../src/routes';
 import { config } from '../config';
 import pkg from '../package.json';
 
-const about = createAbout;
+const about = routes.addAboutRouter;
 
 describe('about-router', () => {
   const server = createServer();

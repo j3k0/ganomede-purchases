@@ -29,20 +29,22 @@ const parseLogLevel = (envValue) => {
 };
 
 const parseApiSecret = () => {
-  const valid = process.env.hasOwnProperty('API_SECRET')
-    && (typeof process.env.API_SECRET === 'string')
-    && (process.env.API_SECRET.length > 0);
+  const valid = process.env.hasOwnProperty('FOVEA_BILLING_SECRET_KEY')
+    && (typeof process.env.FOVEA_BILLING_SECRET_KEY === 'string')
+    && (process.env.FOVEA_BILLING_SECRET_KEY.length > 0);
 
   if (!valid)
-    throw new Error('API_SECRET must be non-empty string');
+    throw new Error('FOVEA_BILLING_SECRET_KEY must be non-empty string');
 
-  return process.env.API_SECRET;
+  return process.env.FOVEA_BILLING_SECRET_KEY;
 };
 
 export const config = {
-  name: 'events',
+  name: 'purchases',
   logLevel: parseLogLevel(process.env.LOG_LEVEL),
   secret: parseApiSecret(),
+
+  purchasesRedisPrefixKey: 'purchases:fovea:user:',
 
   http: {
     host: process.env.HOST || '0.0.0.0',
@@ -52,10 +54,14 @@ export const config = {
     prefix: `/${pkg.api}`
   },
 
-  redis: {
-    host: process.env.REDIS_EVENTS_PORT_6379_TCP_ADDR || 'localhost',
-    port: +(process.env.REDIS_EVENTS_PORT_6379_TCP_PORT || '6379')
+  redisPurchases: {
+    host: process.env.REDIS_PURCHASES_PORT_6379_TCP_ADDR || 'localhost',
+    port: +(process.env.REDIS_PURCHASES_PORT_6379_TCP_PORT || '6379'),
+    ttl: process.env.REDIS_PURCHASES_TTL || 3
   },
 
-  pollTimeout: +(process.env.POLL_TIMEOUT || '5000')
+  redisAuth: {
+    host: process.env.REDIS_AUTH_PORT_6379_TCP_ADDR || 'localhost',
+    port: +(process.env.REDIS_AUTH_PORT_6379_TCP_PORT || '6379'),
+  }
 };

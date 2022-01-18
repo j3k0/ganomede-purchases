@@ -1,13 +1,12 @@
 
 import async from 'async';
 import cluster from 'cluster';
-import redis, { RedisClient } from 'redis';
-import restify, { Server } from 'restify';
+import redis from 'redis';
+import { Server } from 'restify';
 import { InternalError } from 'restify-errors';
 import curtain from 'curtain-down';
 import { config } from '../config';
-import { createAbout } from './about.router';
-import { createPingRouter } from './ping.router';
+import routes from './routes';
 import { createServer } from './server';
 import { logger } from './logger';
 
@@ -45,15 +44,17 @@ const child = () => {
   const server: Server = createServer();
 
   // Clients
-  const redisClient: redis.RedisClient = redis.createClient(config.redis.port, config.redis.host);
-  createAbout(config.http.prefix, server);
-  createPingRouter(config.http.prefix, server);
+  const redisPurchaseClient: redis.RedisClient = redis.createClient(config.redisPurchases.port, config.redisPurchases.host);
+  const redisAuthClient: redis.RedisClient = redis.createClient(config.redisAuth.port, config.redisAuth.host);
+  routes.addAboutRouter(config.http.prefix, server);
+  routes.addPingRouter(config.http.prefix, server);
 
   curtain.on(() => {
     logger.info('worker stopping…');
 
     async.parallel([
-      (cb) => redisClient.quit(cb),
+      (cb) => redisPurchaseClient.quit(cb),
+      (cb) => redisAuthClient.quit(cb),
       (cb) => server.close(cb),
     ], () => cluster.worker?.disconnect());
   });
