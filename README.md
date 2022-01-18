@@ -1,11 +1,11 @@
-# ganomede-subscriptions
+# ganomede-purchases
 
-Subscriptions API.
+Purchases API.
 
 Relations
 ---------
 
- * "SubscriptionsDB" (Redis) -> a cache to store the subscription status for each user.
+ * "PurchasesDB" (Redis) -> a cache to store the purchases for each user.
  * "AuthDB" (Redis) -> to store the subscription status for each user.
    * see https://github.com/j3k0/node-authdb
 
@@ -15,24 +15,24 @@ Configuration
 Variables available for service configuration.
 
  * `FOVEA_BILLING_SECRET_KEY` - The secret API key from Fovea.Billing
- * `REDIS_SUBSCRIPTIONS_PORT_6379_TCP_ADDR` - IP of the SubscriptionsDB redis database.
- * `REDIS_SUBSCRIPTIONS_PORT_6379_TCP_PORT` - Port of the SubscriptionsDB redis database.
- * `REDIS_SUBSCRIPTIONS_TTL` - Default TTL of the SubscriptionsDB redis database.
+ * `REDIS_PURCHASES_PORT_6379_TCP_ADDR` - IP of the PurchasesDB redis database.
+ * `REDIS_PURCHASES_PORT_6379_TCP_PORT` - Port of the PurchasesDB redis database.
+ * `REDIS_PURCHASES_TTL` - Default TTL of the PurchasesDB redis database.
  * `REDIS_AUTH_PORT_6379_TCP_ADDR` - IP of the AuthDB redis
  * `REDIS_AUTH_PORT_6379_TCP_PORT` - Port of the AuthDB redis
 
-SubscriptionsDB
+PurchasesDB
 ---------------
 
  * Contains a store:
-   * `"fovea:user:USER_ID"` -> Purchase object from Fovea.
+   * `"purchases:fovea:user:USER_ID"` -> Purchase objects from Fovea.
 
 API
 ---
 
-## /subscriptions/v1/auth/:token/status [GET]
+## /subscriptions/v1/auth/:token/subscription [GET]
 
-Status of the identified users' subscription.
+Status of the identified users' subscription, the one with the latest `expirationDate`.
 
 ### response [200]
 
@@ -50,9 +50,9 @@ A **Subscription Status** object (cf Data Types).
 
 ### implementation details
 
-The endpoint will check in the SubscriptionsDB for the existance of a Purchase object.
+The endpoint will check in the PurchasesDB for the existance of a Purchase Collection object.
 
-If not present, it'll fetch it and update the SubscriptionsDB, using Fovea's customer purchase API: https://billing.fovea.cc/documentation/api/customer-purchases/ - Cf the webhook endpoint below for more info about storing Purchases, the logic has to be the same in all aspects.
+If not present, it'll fetch it and update the PurchasesDB, using Fovea's customer purchase API: https://billing.fovea.cc/documentation/api/customer-purchases/ - Cf the webhook endpoint below for more info about storing Purchases, the logic has to be the same in all aspects.
 
 The object is then returned in JSON.
 
@@ -62,15 +62,17 @@ The object is then returned in JSON.
 Receive webhook calls from Fovea. See https://billing.fovea.cc/documentation/webhook/
 
  * Checks that the provided password matches the `FOVEA_BILLING_SECRET_KEY` configuration.
- * Stores the user's "Purchase" object in a Redis cache.
+ * Stores the user's "Purchase Collection" object in a Redis cache.
 
 ### reponse [200]
 
 ### implementation details
 
-The Purchase object is stored in redis with the key `"fovea:user:USER_ID"` (replace `USER_ID` with the appropriate one).
+The Purchase object is stored in redis with the key `"purchases:fovea:user:USER_ID"` (replace `USER_ID` with the appropriate one).
 
 Object stored in redis use the TTL defined by `REDIS_SUBSCRIPTIONS_TTL`.
+
+If the purchase collection is empty, store the empty object.
 
 
 Data Types
