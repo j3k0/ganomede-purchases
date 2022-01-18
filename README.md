@@ -30,7 +30,7 @@ PurchasesDB
 API
 ---
 
-## /subscriptions/v1/auth/:token/subscription [GET]
+## /purchases/v1/auth/:token/subscription [GET]
 
 Status of the identified users' subscription, the one with the latest `expirationDate`.
 
@@ -57,7 +57,7 @@ If not present, it'll fetch it and update the PurchasesDB, using Fovea's custome
 The object is then returned in JSON.
 
 
-## /subscriptions/v1/webhooks/fovea [POST]
+## /purchases/v1/webhooks/fovea [POST]
 
 Receive webhook calls from Fovea. See https://billing.fovea.cc/documentation/webhook/
 
@@ -100,3 +100,7 @@ Example:
     "renewalIntent":"Lapse"
 }
 ```
+
+# License
+
+MIT.
