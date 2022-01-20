@@ -9,6 +9,10 @@ import { config } from '../config';
 import routes from './routes';
 import { createServer } from './server';
 import { logger } from './logger';
+import { createClient as createAuthDb } from 'authdb';
+import { AuthdbClient } from './middlewares/authentication';
+import { PurchasesStore } from './stores/purchases';
+
 
 const master = () => {
   let running = true;
@@ -45,16 +49,21 @@ const child = () => {
 
   // Clients
   const redisPurchaseClient: redis.RedisClient = redis.createClient(config.redisPurchases.port, config.redisPurchases.host);
-  const redisAuthClient: redis.RedisClient = redis.createClient(config.redisAuth.port, config.redisAuth.host);
+  //const redisAuthClient: redis.RedisClient = redis.createClient(config.redisAuth.port, config.redisAuth.host);
+  const authdb: AuthdbClient = createAuthDb(config.redisAuth);
+  const purchasesStore: PurchasesStore = new PurchasesStore(redisPurchaseClient);
+
   routes.addAboutRouter(config.http.prefix, server);
   routes.addPingRouter(config.http.prefix, server);
+  routes.addPurchasesRouter(purchasesStore)(config.http.prefix, server, authdb);
+  routes.addWebhooksRouter(purchasesStore)(config.http.prefix, server);
 
   curtain.on(() => {
     logger.info('worker stopping…');
 
     async.parallel([
       (cb) => redisPurchaseClient.quit(cb),
-      (cb) => redisAuthClient.quit(cb),
+      //(cb) => redisAuthClient.quit(cb),
       (cb) => server.close(cb),
     ], () => cluster.worker?.disconnect());
   });

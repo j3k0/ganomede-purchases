@@ -1,6 +1,27 @@
 
 import { logger } from './logger';
 
+declare global {
+  interface Array<T> {
+    firstOrDefault(func?: any): T | null;
+  }
+}
+
+Array.prototype.firstOrDefault = function (func?) {
+  if (this.length == 0) {
+    return null;
+  }//from  ww w .  j  av  a2 s .c o  m
+  if (func == undefined || func == null) {
+    return this[0];
+  }
+  this.forEach(element => {
+    if (func.call(this)) {
+      return element;
+    }
+  });
+  return null;
+};
+
 // Callbacks
 export const loggingCallback = (callback: (e: Error, m: string) => void, error: Error, message: string) => {
   error && logger['error'](error);
@@ -48,3 +69,6 @@ export const debug = (func: any, label: string) => (...args: any) => {
   return func.apply(this, args);
 };
 
+export const isoDateToTimestamp = (dt?: string) => {
+  return dt ? (new Date(dt)).getTime() : 0;
+};

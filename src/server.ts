@@ -3,18 +3,19 @@ import restify from 'restify';
 import { logger } from './logger';
 import { config } from '../config';
 import { sendAuditStats } from './send-audit-stats';
-import { RequestWithGanomede } from './middlewares';
+import { RequestWithGanomede } from './middlewares/authentication';
 
-const matchSecret = (obj: Request, prop: string) => {
-  const has = obj && (obj as any)[prop] && Object.hasOwnProperty.call((obj as any)[prop], 'secret');
-  const match = has && (typeof (obj as any)[prop].secret === 'string')
-    && ((obj as any)[prop].secret.length > 0) && ((obj as any)[prop].secret === config.secret);
+const matchSecret = (obj: Request, prop: string, key: string) => {
+  const has = obj && (obj as any)[prop] && Object.hasOwnProperty.call((obj as any)[prop], key);
+  const match = has && (typeof (obj as any)[prop][key] === 'string')
+    && ((obj as any)[prop][key].length > 0) && ((obj as any)[prop][key] === config.secret);
 
   if (has)
-    delete (obj as any)[prop].secret;
+    delete (obj as any)[prop][key];
 
   return match;
 };
+
 
 const shouldLogRequest = (req: Request) =>
   req.url?.indexOf(`${config.http.prefix}/ping/_health_check`) !== 0;
@@ -65,7 +66,7 @@ export const createServer = () => {
   server.use((req: Request, res: Response, next: NextFunction) => {
 
     (req as RequestWithGanomede).ganomede = {
-      secretMatches: matchSecret(req, 'body') || matchSecret(req, 'query')
+      secretMatches: matchSecret(req, 'body', 'password') || matchSecret(req, 'query', 'password')
     };
 
     next();

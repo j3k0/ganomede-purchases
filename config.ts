@@ -44,7 +44,7 @@ export const config = {
   logLevel: parseLogLevel(process.env.LOG_LEVEL),
   secret: parseApiSecret(),
 
-  purchasesRedisPrefixKey: 'purchases:fovea:user:',
+  purchasesRedisPrefixKey: 'purchases:fovea:user',
 
   http: {
     host: process.env.HOST || '0.0.0.0',
@@ -57,7 +57,7 @@ export const config = {
   redisPurchases: {
     host: process.env.REDIS_PURCHASES_PORT_6379_TCP_ADDR || 'localhost',
     port: +(process.env.REDIS_PURCHASES_PORT_6379_TCP_PORT || '6379'),
-    ttl: process.env.REDIS_PURCHASES_TTL || 3
+    ttl: +(process.env.REDIS_PURCHASES_TTL || 3)
   },
 
   redisAuth: {
