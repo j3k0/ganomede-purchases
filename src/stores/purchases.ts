@@ -4,7 +4,7 @@
  */
 import { RedisClient } from "redis";
 import { config } from '../../config';
-import { PurchasesCollection } from "../definitions/purchases";
+import { ApiPurchaseCollection } from "../definitions/purchases";
 
 export class PurchasesStore {
 
@@ -18,7 +18,7 @@ export class PurchasesStore {
   }
 
   // add or update the collection of userid.
-  addCollection(userId: string, collection: PurchasesCollection, callback: (e: Error | null, res?: string) => void) {
+  addCollection(userId: string, collection: ApiPurchaseCollection, callback: (e: Error | null, res?: string) => void) {
     this.redis.set(this.keyName(userId), JSON.stringify(collection), 'NX', (err, results) => {
       if (err)
         return callback(err);
@@ -34,7 +34,7 @@ export class PurchasesStore {
   }
 
   //we need to get the collection of subscription by the userid
-  getCollection(userId: string, callback: (err: Error | null, result: PurchasesCollection | null) => void) {
+  getCollection(userId: string, callback: (err: Error | null, result: ApiPurchaseCollection | null) => void) {
     this.redis.get(this.keyName(userId), (err: Error | null, result: string | null) => {
       if (err)
         return callback(err, null);

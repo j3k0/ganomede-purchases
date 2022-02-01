@@ -8,11 +8,11 @@ import td, { verify } from 'testdouble';
 import { RedisClient } from 'redis';
 import { PurchasesStore } from '../src/stores/purchases';
 import {
-  Alice_Details, Zia_Details,
-  alice_collection, BOB_TOKEN,
+  aliceDetails, ziaDetails,
+  aliceCollection, bobToken,
   collectionWithCompareRecentOne,
-  empty_collection,
-  Alice_Purchase_key,
+  emptyCollection,
+  alicePurchaseKey,
   webHookPostData
 } from './dummy-data';
 const calledOnce = { times: 1, ignoreExtraArgs: true };
@@ -62,7 +62,7 @@ describe('purchases.webhooks.post', () => {
       });
   });
   it('stores the purchases collection in redis cache.', (done) => {
-    td.when(purchasesRedisClient.set(Alice_Purchase_key, td.matchers.anything(), td.matchers.anything(), td.callback))
+    td.when(purchasesRedisClient.set(alicePurchaseKey, td.matchers.anything(), td.matchers.anything(), td.callback))
       .thenCallback(null, "OK");
 
     supertest(server)
@@ -71,7 +71,7 @@ describe('purchases.webhooks.post', () => {
       .expect(200)
       .end((err, res) => {
         expect(err).to.be.null;
-        verify(purchasesRedisClient.set(Alice_Purchase_key,
+        verify(purchasesRedisClient.set(alicePurchaseKey,
           JSON.stringify(webHookPostData.purchases)), calledOnce);
 
         done();
@@ -79,7 +79,7 @@ describe('purchases.webhooks.post', () => {
   });
 
   it('stores an empty object in case the collection was empty.', (done) => {
-    td.when(purchasesRedisClient.set(Alice_Purchase_key, td.matchers.anything(),
+    td.when(purchasesRedisClient.set(alicePurchaseKey, td.matchers.anything(),
       td.matchers.anything(), td.callback))
       .thenCallback(null, "OK");
 
@@ -92,7 +92,7 @@ describe('purchases.webhooks.post', () => {
       .expect(200)
       .end((err, res) => {
         expect(err).to.be.null;
-        verify(purchasesRedisClient.set(Alice_Purchase_key,
+        verify(purchasesRedisClient.set(alicePurchaseKey,
           '{}'), calledOnce);
 
         done();
@@ -100,7 +100,7 @@ describe('purchases.webhooks.post', () => {
   });
 
   it('stores the object in redis with TTL', (done) => {
-    td.when(purchasesRedisClient.set(Alice_Purchase_key, td.matchers.anything(),
+    td.when(purchasesRedisClient.set(alicePurchaseKey, td.matchers.anything(),
       td.matchers.anything(), td.callback))
       .thenCallback(null, "OK");
 
@@ -111,7 +111,7 @@ describe('purchases.webhooks.post', () => {
       .expect(200)
       .end((err, res) => {
         expect(err).to.be.null;
-        verify(purchasesRedisClient.expire(Alice_Purchase_key, td.matchers.anything()), calledOnce);
+        verify(purchasesRedisClient.expire(alicePurchaseKey, td.matchers.anything()), calledOnce);
         done();
       });
   })

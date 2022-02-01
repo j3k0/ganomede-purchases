@@ -1,8 +1,6 @@
-import { PurchasesCollection } from "./purchases";
+import { ApiCustomerPurchases } from "./purchases";
 
-export type WebHookPost = {
+export type WebHookPost = ApiCustomerPurchases & {
   type: string;
-  applicationUsername: string;
-  purchases: PurchasesCollection,
   password: string
 };

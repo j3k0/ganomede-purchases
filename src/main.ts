@@ -12,6 +12,7 @@ import { logger } from './logger';
 import { createClient as createAuthDb } from 'authdb';
 import { AuthdbClient } from './middlewares/authentication';
 import { PurchasesStore } from './stores/purchases';
+import { V2 } from 'iaptic';
 
 
 const master = () => {
@@ -52,10 +53,14 @@ const child = () => {
   //const redisAuthClient: redis.RedisClient = redis.createClient(config.redisAuth.port, config.redisAuth.host);
   const authdb: AuthdbClient = createAuthDb(config.redisAuth);
   const purchasesStore: PurchasesStore = new PurchasesStore(redisPurchaseClient);
+  const customerClient = new V2.CustomersClient({
+    secretKey: config.secret!,
+    appName: config.appName
+  });
 
   routes.addAboutRouter(config.http.prefix, server);
   routes.addPingRouter(config.http.prefix, server);
-  routes.addPurchasesRouter(purchasesStore)(config.http.prefix, server, authdb);
+  routes.addPurchasesRouter(purchasesStore, customerClient)(config.http.prefix, server, authdb);
   routes.addWebhooksRouter(purchasesStore)(config.http.prefix, server);
 
   curtain.on(() => {

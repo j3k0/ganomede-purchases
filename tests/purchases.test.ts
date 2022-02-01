@@ -9,12 +9,14 @@ import { RedisClient } from 'redis';
 import { PurchasesStore } from '../src/stores/purchases';
 import restify from 'restify';
 import {
-  Alice_Details, Zia_Details,
-  alice_collection, BOB_TOKEN,
+  aliceDetails, ziaDetails,
+  aliceCollection, bobToken,
   collectionWithCompareRecentOne,
-  Alice_Purchase_key,
-  Zia_Purchase_key
+  alicePurchaseKey,
+  ziaPurchaseKey,
+  getCustomerPurchasesResultData
 } from './dummy-data';
+import { V2 } from 'iaptic';
 const calledOnce = { times: 1, ignoreExtraArgs: true };
 
 
@@ -25,18 +27,20 @@ describe('purchases.get', () => {
   let purchasesRedisClient: RedisClient;
   let authdbClient: AuthdbClient
   let server: restify.Server;
+  let customerClient: V2.CustomersClient;
   beforeEach((done) => {
     server = createServer();
     authdbClient = td.object(['getAccount', 'addAccount']);
     purchasesRedisClient = td.object<RedisClient>();
+    customerClient = td.object<V2.CustomersClient>();
     const purchasesStore: PurchasesStore = new PurchasesStore(purchasesRedisClient);
 
-    td.when(purchasesRedisClient.get(Alice_Purchase_key, td.callback))
-      .thenCallback(null, JSON.stringify(alice_collection));
+    td.when(purchasesRedisClient.get(alicePurchaseKey, td.callback))
+      .thenCallback(null, JSON.stringify(aliceCollection));
 
-    td.when(authdbClient.getAccount(Alice_Details.token, td.callback))
-      .thenCallback(null, Alice_Details.userDetails);
-    routes.addPurchasesRouter(purchasesStore)(config.http.prefix, server, authdbClient);
+    td.when(authdbClient.getAccount(aliceDetails.token, td.callback))
+      .thenCallback(null, aliceDetails.userDetails);
+    routes.addPurchasesRouter(purchasesStore, customerClient)(config.http.prefix, server, authdbClient);
     server.listen(done);
   });
   afterEach(done => server.close(done));
@@ -49,7 +53,7 @@ describe('purchases.get', () => {
 
   it('should respond', (done) => {
     supertest(server)
-      .get(`/purchases/v1/auth/${Alice_Details.token}/subscription`)
+      .get(`/purchases/v1/auth/${aliceDetails.token}/subscription`)
       .expect(200)
       .end((err, res) => {
         expect(err).to.be.null;
@@ -58,10 +62,10 @@ describe('purchases.get', () => {
   });
 
   it('fails when token is invalid', (done) => {
-    td.when(authdbClient.getAccount(BOB_TOKEN, td.callback))
+    td.when(authdbClient.getAccount(bobToken, td.callback))
       .thenCallback('not found', null);
     supertest(server)
-      .get(`/purchases/v1/auth/${BOB_TOKEN}/subscription`)
+      .get(`/purchases/v1/auth/${bobToken}/subscription`)
       .expect(500)
       .end((err, res) => {
         expect(res.body.code).to.be.eqls('InternalServer');
@@ -71,40 +75,162 @@ describe('purchases.get', () => {
 
   it('fetch the purchases collection from redis and return', (done) => {
     supertest(server)
-      .get(`/purchases/v1/auth/${Alice_Details.token}/subscription`)
+      .get(`/purchases/v1/auth/${aliceDetails.token}/subscription`)
       .expect(200)
       .end((err, res) => {
         expect(err).to.be.null;
-        expect(res.body).to.be.eqls(alice_collection["apple:yearly_subcscription"]);
-        verify(purchasesRedisClient.get(Alice_Purchase_key, td.matchers.anything()), calledOnce);
+        expect(res.body).to.be.eqls(aliceCollection["apple:yearly_subcscription"]);
+        verify(purchasesRedisClient.get(alicePurchaseKey, td.matchers.anything()), calledOnce);
         done();
       });
   });
 
-  it('fetch the purchases collection from billing in case the existing was empty');
-
-  it('store the purchases collection in current redis in case the existing was empty');
-
   it('returns the recent subscription status object', (done) => {
-    td.when(authdbClient.getAccount(Zia_Details.token, td.callback))
-      .thenCallback(null, Zia_Details.userDetails);
-    td.when(purchasesRedisClient.get(Zia_Purchase_key, td.callback))
+    td.when(authdbClient.getAccount(ziaDetails.token, td.callback))
+      .thenCallback(null, ziaDetails.userDetails);
+    td.when(purchasesRedisClient.get(ziaPurchaseKey, td.callback))
       .thenCallback(null, JSON.stringify(collectionWithCompareRecentOne));
 
     supertest(server)
-      .get(`/purchases/v1/auth/${Zia_Details.token}/subscription`)
+      .get(`/purchases/v1/auth/${ziaDetails.token}/subscription`)
       .expect(200)
       .end((err, res) => {
         expect(err).to.be.null;
         expect(res.body).to.be.eqls(collectionWithCompareRecentOne["apple:very_last_subcscription"]);
-        verify(purchasesRedisClient.get(Zia_Purchase_key, td.matchers.anything()), calledOnce);
+        verify(purchasesRedisClient.get(ziaPurchaseKey, td.matchers.anything()), calledOnce);
         done();
       });
   });
 
-  it('stores the object in redis with TTL')
+  const testStubs = (resultData, customerClientError: Error | null = null) => {
+    td.when(authdbClient.getAccount(ziaDetails.token, td.callback))
+      .thenCallback(null, ziaDetails.userDetails);
+
+    td.when(purchasesRedisClient.get(ziaPurchaseKey, td.callback))
+      .thenCallback(null, JSON.stringify({}));
+
+    td.when(customerClient.getCustomerPurchases(ziaDetails.userDetails.username, td.callback))
+      .thenCallback(customerClientError, resultData);
+
+    td.when(purchasesRedisClient.set(ziaPurchaseKey, td.matchers.anything(), td.matchers.anything(), td.callback))
+      .thenCallback(null, "OK");
+  };
+
+  it('fetch the purchases collection from billing in case the existing was empty', (done) => {
+
+    testStubs(getCustomerPurchasesResultData);
+
+    supertest(server)
+      .get(`/purchases/v1/auth/${ziaDetails.token}/subscription`)
+      .expect(200)
+      .end((err, res) => {
+        expect(err).to.be.null;
+        verify(customerClient.getCustomerPurchases(td.matchers.anything(), td.matchers.anything()), calledOnce);
+        done();
+      });
+  });
+
+  it('store the purchases collection in current redis in case the existing was empty', (done) => {
+
+    testStubs(getCustomerPurchasesResultData);
+
+    supertest(server)
+      .get(`/purchases/v1/auth/${ziaDetails.token}/subscription`)
+      .expect(200)
+      .end((err, res) => {
+        expect(err).to.be.null;
+        verify(purchasesRedisClient.set(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()), calledOnce);
+        done();
+      });
+  });
+
+  it('store the empty purchases collection in current redis', (done) => {
+
+    testStubs({});
+
+    supertest(server)
+      .get(`/purchases/v1/auth/${ziaDetails.token}/subscription`)
+      .expect(200)
+      .end((err, res) => {
+        expect(err).to.be.null;
+        verify(purchasesRedisClient.set(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()), calledOnce);
+        done();
+      });
+  });
+
+  it('returns 500 error when the customer-client failed', (done) => {
+
+    testStubs({}, new Error('Not found'));
+
+    supertest(server)
+      .get(`/purchases/v1/auth/${ziaDetails.token}/subscription`)
+      .expect(500)
+      .end((err, res) => {
+        expect(res.body.message).to.be.contains('failed to get the data from CustomerClient');
+        done();
+      });
+  });
+
+
+  it('stores the object in redis with TTL', (done) => {
+    testStubs(getCustomerPurchasesResultData);
+
+    supertest(server)
+      .get(`/purchases/v1/auth/${ziaDetails.token}/subscription`)
+      .expect(200)
+      .end((err, res) => {
+        expect(err).to.be.null;
+        verify(purchasesRedisClient.expire(td.matchers.anything(), 3600 * 24 * config.redisPurchases.ttl), calledOnce);
+        done();
+      });
+  });
 
 
 });
 
 
+
+
+describe('test purchases.get with real CustomerClient', () => {
+  let purchasesRedisClient: RedisClient;
+  let authdbClient: AuthdbClient
+  let server: restify.Server;
+  let customerClient: V2.CustomersClient;
+  beforeEach((done) => {
+    server = createServer();
+    authdbClient = td.object(['getAccount', 'addAccount']);
+    purchasesRedisClient = td.object<RedisClient>();
+    customerClient = new V2.CustomersClient({
+      secretKey: config.secret!,
+      appName: config.appName
+    })
+    const purchasesStore: PurchasesStore = new PurchasesStore(purchasesRedisClient);
+
+    td.when(purchasesRedisClient.get(alicePurchaseKey, td.callback))
+      .thenCallback(null, JSON.stringify(aliceCollection));
+
+    td.when(authdbClient.getAccount(aliceDetails.token, td.callback))
+      .thenCallback(null, aliceDetails.userDetails);
+    routes.addPurchasesRouter(purchasesStore, customerClient)(config.http.prefix, server, authdbClient);
+    server.listen(done);
+  });
+  afterEach(done => server.close(done));
+
+  it('returns an error from the api when using invalid secret and appname', (done) => {
+    td.when(authdbClient.getAccount(ziaDetails.token, td.callback))
+      .thenCallback(null, ziaDetails.userDetails);
+    td.when(purchasesRedisClient.get(ziaPurchaseKey, td.callback))
+      .thenCallback(null, JSON.stringify({}));
+    td.when(purchasesRedisClient.set(ziaPurchaseKey, td.matchers.anything(), td.matchers.anything(), td.callback))
+      .thenCallback(null, "OK");
+
+    supertest(server)
+      .get(`/purchases/v1/auth/${ziaDetails.token}/subscription`)
+      .expect(500)
+      .end((err, res) => {
+        expect(res.body.message).to.be.contains('failed to get the data from CustomerClient');
+        done();
+      });
+  })
+
+});

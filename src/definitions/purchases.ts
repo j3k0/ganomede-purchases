@@ -1,7 +1,21 @@
 import { CancelationReason, Platform, PriceConsentStatus, RenewalIntent } from "./api-types";
 export type ISODate = string;
 
-export type PurchasesCollection = { [key: string]: ApiTransaction }
+
+export type ApiPurchase = ApiTransaction & {
+  canRefresh?: boolean;
+  isExpired?: boolean;
+}
+
+export interface ApiPurchaseCollection {
+  [productId: string]: ApiPurchase;
+}
+
+/** List of purchases for a customer */
+export interface ApiCustomerPurchases {
+  applicationUsername: string;
+  purchases: ApiPurchaseCollection;
+}
 
 export interface ApiTransaction {
 

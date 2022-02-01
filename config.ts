@@ -43,6 +43,7 @@ export const config = {
   name: 'purchases',
   logLevel: parseLogLevel(process.env.LOG_LEVEL),
   secret: parseApiSecret(),
+  appName: process.env.FOVEA_BILLING_APP_NAME || '',
 
   purchasesRedisPrefixKey: 'purchases:fovea:user',
 
