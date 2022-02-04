@@ -20,8 +20,6 @@ import { V2 } from 'iaptic';
 const calledOnce = { times: 1, ignoreExtraArgs: true };
 
 
-
-
 describe('purchases.get', () => {
 
   let purchasesRedisClient: RedisClient;
@@ -45,7 +43,7 @@ describe('purchases.get', () => {
   });
   afterEach(done => server.close(done));
 
-  it('add the route `/purchases/v1/auth/:token/subscription` [GET] to the server', (done) => {
+  it('adds the route `/purchases/v1/auth/:token/subscription` [GET] to the server', (done) => {
     const route = Object.values(server.router.getRoutes()).find((r) => r.path === '/purchases/v1/auth/:token/subscription' && r.method === 'GET');
     expect(route).to.be.not.undefined;
     done();
@@ -112,7 +110,7 @@ describe('purchases.get', () => {
     td.when(customerClient.getCustomerPurchases(ziaDetails.userDetails.username, td.callback))
       .thenCallback(customerClientError, resultData);
 
-    td.when(purchasesRedisClient.set(ziaPurchaseKey, td.matchers.anything(), td.matchers.anything(), td.callback))
+    td.when(purchasesRedisClient.set(ziaPurchaseKey, td.matchers.anything(), td.matchers.anything(), td.matchers.anything(), td.callback))
       .thenCallback(null, "OK");
   };
 
@@ -130,7 +128,7 @@ describe('purchases.get', () => {
       });
   });
 
-  it('store the purchases collection in current redis in case the existing was empty', (done) => {
+  it('stores the purchases collection in current redis in case the existing was empty', (done) => {
 
     testStubs(getCustomerPurchasesResultData);
 
@@ -139,12 +137,12 @@ describe('purchases.get', () => {
       .expect(200)
       .end((err, res) => {
         expect(err).to.be.null;
-        verify(purchasesRedisClient.set(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()), calledOnce);
+        verify(purchasesRedisClient.set(td.matchers.anything(), td.matchers.anything(), td.matchers.anything(), td.matchers.anything()), calledOnce);
         done();
       });
   });
 
-  it('store the empty purchases collection in current redis', (done) => {
+  it('stores the empty purchases collection in current redis', (done) => {
 
     testStubs({});
 
@@ -153,7 +151,7 @@ describe('purchases.get', () => {
       .expect(200)
       .end((err, res) => {
         expect(err).to.be.null;
-        verify(purchasesRedisClient.set(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()), calledOnce);
+        verify(purchasesRedisClient.set(td.matchers.anything(), td.matchers.anything(), td.matchers.anything(), td.matchers.anything()), calledOnce);
         done();
       });
   });
@@ -171,7 +169,6 @@ describe('purchases.get', () => {
       });
   });
 
-
   it('stores the object in redis with TTL', (done) => {
     testStubs(getCustomerPurchasesResultData);
 
@@ -180,15 +177,12 @@ describe('purchases.get', () => {
       .expect(200)
       .end((err, res) => {
         expect(err).to.be.null;
-        verify(purchasesRedisClient.expire(td.matchers.anything(), 3600 * 24 * config.redisPurchases.ttl), calledOnce);
+        verify(purchasesRedisClient.set(td.matchers.anything(), td.matchers.anything(),
+          td.matchers.anything(), 3600 * 24 * config.redisPurchases.ttlDays), calledOnce);
         done();
       });
   });
-
-
 });
-
-
 
 
 describe('test purchases.get with real CustomerClient', () => {

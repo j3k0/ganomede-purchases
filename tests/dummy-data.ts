@@ -1,10 +1,11 @@
-import { ApiPurchaseCollection } from '../src/definitions/purchases';
+
+import { ApiCollection } from 'iaptic';
 import { config } from '../config';
 
 
-export const emptyCollection: ApiPurchaseCollection = {};
+export const emptyCollection: ApiCollection = {};
 
-export const aliceCollection: ApiPurchaseCollection = {
+export const aliceCollection: ApiCollection = {
   "apple:monthly_subcscription": {
     productId: "apple:monthly_subcscription",
     platform: "apple",
@@ -29,7 +30,7 @@ export const aliceCollection: ApiPurchaseCollection = {
   }
 };
 
-export const collectionWithCompareRecentOne: ApiPurchaseCollection = Object.assign({}, aliceCollection, {
+export const collectionWithCompareRecentOne: ApiCollection = Object.assign({}, aliceCollection, {
   "apple:very_last_subcscription": {
     productId: "apple:very_last_subcscription",
     platform: "apple",
@@ -66,7 +67,7 @@ export const webHookPostData = {
   type: "purchases.updated",
   applicationUsername: aliceDetails.userDetails.username,
   purchases: aliceCollection,
-  password: config.secret
+  password: config.foveaApiSecret
 };
 export const alicePurchaseKey = `${config.purchasesRedisPrefixKey}:${aliceDetails.userDetails.username}`;
 export const ziaPurchaseKey = `${config.purchasesRedisPrefixKey}:${ziaDetails.userDetails.username}`;

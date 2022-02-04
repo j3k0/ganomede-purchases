@@ -28,7 +28,7 @@ const parseLogLevel = (envValue) => {
   return bunyan[level];
 };
 
-const parseApiSecret = () => {
+const parseFoveaBillingApiSecret = () => {
   const valid = process.env.hasOwnProperty('FOVEA_BILLING_SECRET_KEY')
     && (typeof process.env.FOVEA_BILLING_SECRET_KEY === 'string')
     && (process.env.FOVEA_BILLING_SECRET_KEY.length > 0);
@@ -39,10 +39,22 @@ const parseApiSecret = () => {
   return process.env.FOVEA_BILLING_SECRET_KEY;
 };
 
+const parseApiSecret = () => {
+  const valid = process.env.hasOwnProperty('API_SECRET')
+    && (typeof process.env.API_SECRET === 'string')
+    && (process.env.API_SECRET.length > 0);
+
+  if (!valid)
+    throw new Error('API_SECRET must be non-empty string');
+
+  return process.env.API_SECRET;
+};
+
 export const config = {
   name: 'purchases',
   logLevel: parseLogLevel(process.env.LOG_LEVEL),
   secret: parseApiSecret(),
+  foveaApiSecret: parseFoveaBillingApiSecret(),
   appName: process.env.FOVEA_BILLING_APP_NAME || '',
 
   purchasesRedisPrefixKey: 'purchases:fovea:user',
@@ -58,7 +70,7 @@ export const config = {
   redisPurchases: {
     host: process.env.REDIS_PURCHASES_PORT_6379_TCP_ADDR || 'localhost',
     port: +(process.env.REDIS_PURCHASES_PORT_6379_TCP_PORT || '6379'),
-    ttl: +(process.env.REDIS_PURCHASES_TTL || 3)
+    ttlDays: +(process.env.REDIS_PURCHASES_TTL || 3)
   },
 
   redisAuth: {

@@ -8,16 +8,10 @@ import td, { verify } from 'testdouble';
 import { RedisClient } from 'redis';
 import { PurchasesStore } from '../src/stores/purchases';
 import {
-  aliceDetails, ziaDetails,
-  aliceCollection, bobToken,
-  collectionWithCompareRecentOne,
-  emptyCollection,
   alicePurchaseKey,
   webHookPostData
 } from './dummy-data';
 const calledOnce = { times: 1, ignoreExtraArgs: true };
-
-
 
 
 describe('purchases.webhooks.post', () => {
@@ -61,8 +55,9 @@ describe('purchases.webhooks.post', () => {
         done();
       });
   });
+
   it('stores the purchases collection in redis cache.', (done) => {
-    td.when(purchasesRedisClient.set(alicePurchaseKey, td.matchers.anything(), td.matchers.anything(), td.callback))
+    td.when(purchasesRedisClient.set(alicePurchaseKey, td.matchers.anything(), td.matchers.anything(), td.matchers.anything(), td.callback))
       .thenCallback(null, "OK");
 
     supertest(server)
@@ -80,6 +75,7 @@ describe('purchases.webhooks.post', () => {
 
   it('stores an empty object in case the collection was empty.', (done) => {
     td.when(purchasesRedisClient.set(alicePurchaseKey, td.matchers.anything(),
+      td.matchers.anything(),
       td.matchers.anything(), td.callback))
       .thenCallback(null, "OK");
 
@@ -101,9 +97,9 @@ describe('purchases.webhooks.post', () => {
 
   it('stores the object in redis with TTL', (done) => {
     td.when(purchasesRedisClient.set(alicePurchaseKey, td.matchers.anything(),
+      td.matchers.anything(),
       td.matchers.anything(), td.callback))
       .thenCallback(null, "OK");
-
 
     supertest(server)
       .post('/purchases/v1/webhooks/fovea')
@@ -111,7 +107,9 @@ describe('purchases.webhooks.post', () => {
       .expect(200)
       .end((err, res) => {
         expect(err).to.be.null;
-        verify(purchasesRedisClient.expire(alicePurchaseKey, td.matchers.anything()), calledOnce);
+        verify(purchasesRedisClient.set(alicePurchaseKey, td.matchers.anything(),
+          td.matchers.anything(),
+          3600 * 24 * config.redisPurchases.ttlDays, td.matchers.anything()), calledOnce);
         done();
       });
   })

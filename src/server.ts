@@ -66,7 +66,7 @@ export const createServer = () => {
   server.use((req: Request, res: Response, next: NextFunction) => {
 
     (req as RequestWithGanomede).ganomede = {
-      secretMatches: matchSecret(req, 'body', 'password') || matchSecret(req, 'query', 'password')
+      secretMatches: matchSecret(req, 'body', 'secret') || matchSecret(req, 'query', 'secret')
     };
 
     next();

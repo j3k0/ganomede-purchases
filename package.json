@@ -8,7 +8,7 @@
     "prepublish": "npm run snyk-protect && npm run build && npm run lint && npm run test",
     "start": "node -r source-map-support/register build/index.js",
     "startw": "nodemon --exec \"npm start\" --watch build",
-    "test": "FOVEA_BILLING_SECRET_KEY=1 npx mocha --colors --require ts-node/register --extensions ts tests/*.test.ts tests/**/*.test.ts | bunyan -l error -o short --color",
+    "test": "API_SECRET=1 FOVEA_BILLING_SECRET_KEY=2 mocha --colors --require ts-node/register --extensions ts tests/*.test.ts tests/**/*.test.ts | bunyan -l error -o short --color",
     "testw": "nodemon --ext ts --watch src/ --watch tests/ --watch config.ts --exec \"npm test\"",
     "coverage": "LOG_LEVEL=FATAL FOVEA_BILLING_SECRET_KEY=12345678 istanbul cover _mocha -- -b tests/helper.js tests/**/*.test.js && istanbul report",
     "lint": "eslint src/ tests/ --ext .ts",
