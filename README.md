@@ -15,6 +15,7 @@ Configuration
 Variables available for service configuration.
 
  * `FOVEA_BILLING_SECRET_KEY` - The secret API key from Fovea.Billing
+ * `FOVEA_BILLING_APP_NAME` - the app name from Fovea.Billing
  * `REDIS_PURCHASES_PORT_6379_TCP_ADDR` - IP of the PurchasesDB redis database.
  * `REDIS_PURCHASES_PORT_6379_TCP_PORT` - Port of the PurchasesDB redis database.
  * `REDIS_PURCHASES_TTL` - Default TTL of the PurchasesDB redis database.

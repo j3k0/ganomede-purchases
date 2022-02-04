@@ -1,7 +1,7 @@
 
 import supertest from 'supertest';
 import { createServer } from '../src/server';
-import { createPingRouter } from '../src/ping.router';
+import routes from '../src/routes';
 import { config } from '../config';
 
 describe('ping-router', () => {
@@ -10,7 +10,7 @@ describe('ping-router', () => {
   const url = `${config.http.prefix}/ping/something`;
 
   before(done => {
-    createPingRouter(config.http.prefix, server);
+    routes.addPingRouter(config.http.prefix, server);
     server.listen(done);
   });
 

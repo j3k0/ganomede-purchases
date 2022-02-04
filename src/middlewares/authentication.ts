@@ -1,10 +1,20 @@
 
 import lodash from 'lodash';
-import { Request, Response, Next as NextFunction } from 'restify';
-
+import { Request, Response, Next as NextFunction, Next } from 'restify';
+import { HttpError } from 'restify-errors';
 import { InternalServerError } from 'restify-errors';
-import { InvalidAuthTokenError, InvalidCredentialsError, sendHttpError } from './errors';
-import { logger } from './logger';
+import { InvalidAuthTokenError, InvalidCredentialsError, sendHttpError } from '../errors';
+import { logger } from '../logger';
+
+
+export interface AuthdbUser {
+  username: string;
+  email?: string;
+}
+export interface AuthdbClient {
+  addAccount: (token: string, user: AuthdbUser | null, callback?: (err?: HttpError | null) => void) => void;
+  getAccount: (token: string, callback: (err: HttpError | null, user?: AuthdbUser) => void) => void;
+}
 
 export interface RequestWithGanomede extends Request {
   ganomede: { secretMatches: boolean; userId?: string; }
@@ -23,19 +33,24 @@ const parseUserIdFromSecretToken = (secret: string, token: string) => {
 };
 
 export const requireAuth = ({ authdbClient = null, secret = '', paramName = 'token' }:
-  { authdbClient: any, secret: string, paramName?: string } = { authdbClient: null, secret: '', paramName: 'token' }) => (req: RequestWithGanomede, res: Response, next: NextFunction) => {
+  { authdbClient: AuthdbClient | null, secret: string, paramName?: string } = { authdbClient: null, secret: '', paramName: 'token' }) => (req: Request, res: Response, next: NextFunction) => {
     const token = lodash.get(req, `params.${paramName}`);
     if (!token)
       return sendHttpError(next, new InvalidAuthTokenError());
 
     const spoofed = secret && parseUserIdFromSecretToken(secret, token);
     if (spoofed) {
-      req.ganomede.secretMatches = true;
-      req.ganomede.userId = spoofed;
+      (req as RequestWithGanomede).ganomede.secretMatches = true;
+      (req as RequestWithGanomede).ganomede.userId = spoofed;
       return next();
     }
 
-    authdbClient?.getAccount(token, (err: Error, redisResult: any) => {
+    if (!authdbClient) {
+      logger.error('authdbClient is not configured', token);
+      return sendHttpError(next, new InternalServerError());
+    }
+
+    authdbClient?.getAccount(token, (err: Error | null, redisResult?: AuthdbUser) => {
       if (err) {
         logger.error('authdbClient.getAccount("%j") failed', token, err);
         return sendHttpError(next, new InternalServerError());
@@ -54,7 +69,8 @@ export const requireAuth = ({ authdbClient = null, secret = '', paramName = 'tok
       if (!redisResult)
         return sendHttpError(next, new InvalidCredentialsError());
 
-      req.ganomede.userId = userId;
+      (req as RequestWithGanomede).ganomede.userId = userId;
+      req.params.userId = userId;
       return next();
     });
   };

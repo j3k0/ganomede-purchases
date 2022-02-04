@@ -48,3 +48,6 @@ export const debug = (func: any, label: string) => (...args: any) => {
   return func.apply(this, args);
 };
 
+export const isoDateToTimestamp = (dt?: string) => {
+  return dt ? (new Date(dt)).getTime() : 0;
+};
